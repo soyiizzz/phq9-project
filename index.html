@@ -3,106 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마포구정신건강복지센터 청년 마음건강 체크 - PHQ-9</title>
+    <title>청년 마음건강 체크</title>
     <style>
-        /* 디자인 설정 */
         body { font-family: sans-serif; background-color: #f0f4f0; padding: 20px; line-height: 1.6; margin: 0; }
         .container { max-width: 600px; margin: 20px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        h1 { color: #2e7d32; text-align: center; margin-bottom: 20px; }
+        h1 { color: #2e7d32; text-align: center; }
+        .input-group { margin-bottom: 15px; }
+        input[type="text"], input[type="tel"] { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .consent-box { background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 13px; border: 1px solid #eee; margin: 20px 0; }
+        .consent-box h4 { margin-top: 0; color: #333; }
         .question { margin-bottom: 25px; border-bottom: 1px dashed #eee; padding-bottom: 15px; }
         .options { display: grid; gap: 8px; margin-top: 10px; }
         label { background: #f9f9f9; padding: 12px; border-radius: 8px; cursor: pointer; border: 1px solid #eee; display: block; font-size: 14px; }
-        input[type="radio"] { margin-right: 10px; }
-        .submit-btn { background: #2e7d32; color: white; border: none; padding: 18px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .submit-btn:hover { background: #1b5e20; }
+        .submit-btn { background: #2e7d32; color: white; border: none; padding: 18px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div class="container">
-    <h1>📝 마음건강 알아보기</h1>
+<div id="info-section" class="container">
+    <h1>🌱 마음건강 검사 시작</h1>
+    <div class="input-group">
+        <label>이름</label>
+        <input type="text" id="userName" placeholder="성함을 입력해주세요">
+    </div>
+    <div class="input-group">
+        <label>연락처</label>
+        <input type="tel" id="userPhone" placeholder="01012345678 (숫자만)">
+    </div>
+    <div class="input-group">
+        <label>유입 경로 (카페명)</label>
+        <input type="text" id="userSource" placeholder="이 검사를 알게 된 카페 이름을 적어주세요">
+    </div>
+
+    <div class="consent-box">
+        <h4>* 2. 개인정보 수집 및 이용 동의</h4>
+        <p>• 수집항목: 이름, 연락처, 검사 결과</p>
+        <p>• 수집목적: 상품(쿠폰) 지급 및 서비스 안내</p>
+        <p style="color:red; font-weight:bold;">• 보유기간: 청년 정신건강 사업 종료 시 파기</p>
+        <label style="background:none; border:none; padding:0;">
+            <input type="checkbox" id="privacyConsent"> 개인정보 수집 및 이용에 동의합니다.
+        </label>
+    </div>
+    <button type="button" class="submit-btn" onclick="checkInfo()">검사 시작하기</button>
+    <div id="reaccess-div" style="text-align:center; margin-top:15px; display:none;">
+        <p style="font-size:12px; color:#666;">기존 검사 기록이 있습니다.</p>
+        <button onclick="location.href='coupon.html'" style="background:none; border:none; color:#2e7d32; text-decoration:underline; cursor:pointer;">내 쿠폰 확인하기</button>
+    </div>
+</div>
+
+<div id="survey-section" class="container" style="display:none;">
+    <h1>📝 PHQ-9 자가진단</h1>
     <form id="phqForm">
-        <div id="questions-container">
-            </div>
-        <button type="button" class="submit-btn" onclick="submitSurvey()">검사 완료하고 쿠폰 받기</button>
+        <div id="questions-container"></div>
+        <button type="button" class="submit-btn" onclick="submitSurvey()">제출하고 쿠폰 받기</button>
     </form>
 </div>
 
 <script>
-    // 1. Supabase 연결 설정 (사용자님 정보 입력됨)
     const SUPABASE_URL = 'https://jiqqrhhzqalknfqnagzc.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_32sXJul3D-EyGA51HqZK1A_CWjBJ95J';
-    
-    // 변수 이름을 supabaseClient로 지어 충돌을 방지합니다.
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 2. 질문 목록
-    const questions = [
-        "일 또는 여가 활동을 하는 데 흥미나 즐거움을 느끼지 못함",
-        "기분이 가라앉거나, 우울하거나, 희망이 없음",
-        "잠이 들거나 계속 잠을 자는 것이 어려움, 또는 잠을 너무 많이 잠",
-        "피곤하다고 느끼거나 기운이 거의 없음",
-        "입맛이 없거나 너무 많이 먹음",
-        "내가 잘못을 했거나, 실패 했다는 생각이 들었음 (혹은 자신과 가족을 실망시켰다고 생각함)",
-        "신문을 읽거나 TV를 보는 것과 같은 일상적인 일에 집중하는 것이 어려움",
-        "다른 사람들이 알아챌 정도로 너무 느리게 움직이거나 말을 함",
-        "죽는 것이 더 낫다고 생각하거나 어떤 식으로든 자해를 하려고 생각함"
-    ];
+    // 재접속 확인: 이전에 검사한 적이 있다면 버튼 노출
+    if(localStorage.getItem('savedUserId')) {
+        document.getElementById('reaccess-div').style.display = 'block';
+    }
 
-    // 3. 화면에 질문 뿌리기 (이 코드가 실행되어야 질문이 보입니다)
-    const container = document.getElementById('questions-container');
-    
-    questions.forEach((q, i) => {
-        const div = document.createElement('div');
-        div.className = 'question';
-        div.innerHTML = `
-            <p><strong>${i + 1}. ${q}</strong></p>
-            <div class="options">
+    const questions = ["일 또는 여가 활동을 하는 데 흥미나 즐거움을 느끼지 못함", "기분이 가라앉거나, 우울하거나, 희망이 없음", "잠이 들거나 계속 잠을 자는 것이 어려움, 또는 잠을 너무 많이 잠", "피곤하다고 느끼거나 기운이 거의 없음", "입맛이 없거나 너무 많이 먹음", "자신을 부정적으로 보기 - 혹은 자신이 실패자라고 느끼거나 자신 또는 가족을 실망시켰다고 생각함", "신문을 읽거나 TV를 보는 것과 같은 일에 집중하는 것이 어려움", "다른 사람들이 알아챌 정도로 너무 느리게 움직이거나 말을 함", "죽는 것이 더 낫다고 생각하거나 어떤 식으로든 자해를 하려고 생각함"];
+
+    // 정보 입력 확인 후 설문 시작
+    function checkInfo() {
+        if(!document.getElementById('userName').value || !document.getElementById('userPhone').value) return alert("이름과 연락처를 입력해주세요.");
+        if(!document.getElementById('privacyConsent').checked) return alert("개인정보 수집 동의가 필요합니다.");
+        
+        document.getElementById('info-section').style.display = 'none';
+        document.getElementById('survey-section').style.display = 'block';
+        renderQuestions();
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('questions-container');
+        if(container.children.length > 0) return;
+        questions.forEach((q, i) => {
+            const div = document.createElement('div');
+            div.className = 'question';
+            div.innerHTML = `<p><strong>${i+1}. ${q}</strong></p><div class="options">
                 <label><input type="radio" name="q${i}" value="0" required> 전혀 없음</label>
                 <label><input type="radio" name="q${i}" value="1"> 며칠 동안</label>
                 <label><input type="radio" name="q${i}" value="2"> 7일 이상</label>
                 <label><input type="radio" name="q${i}" value="3"> 거의 매일</label>
-            </div>
-        `;
-        container.appendChild(div);
-    });
+            </div>`;
+            container.appendChild(div);
+        });
+    }
 
-    // 4. 결과 제출 함수
     async function submitSurvey() {
-        const phoneNumber = prompt("쿠폰을 전송받을 연락처를 입력해주세요\n(예: 010-1234-5678)");
-        if(!phoneNumber) return alert("연락처를 입력해야 합니다!");
-
         const form = document.getElementById('phqForm');
         const formData = new FormData(form);
         let totalScore = 0;
         let count = 0;
-        
-        for (let [key, value] of formData.entries()) {
-            totalScore += parseInt(value);
-            count++;
-        }
-
+        for (let [key, value] of formData.entries()) { totalScore += parseInt(value); count++; }
         if(count < 9) return alert("모든 문항에 답변해주세요!");
 
-        // Supabase 장부에 저장
-        try {
-            const { error } = await supabaseClient
-                .from('survey_results')
-                .insert([{ phone_number: phoneNumber, total_score: totalScore }]);
+        const { data, error } = await supabaseClient
+            .from('survey_results')
+            .insert([{ 
+                name: document.getElementById('userName').value,
+                phone_number: document.getElementById('userPhone').value,
+                source: document.getElementById('userSource').value,
+                total_score: totalScore 
+            }]).select();
 
-            if (error) throw error;
-
-            alert(`검사 완료! 점수는 ${totalScore}점입니다.\n장부에 기록되었습니다.`);
-            // 성공 시 구글로 이동 (나중에 coupon.html로 바꾸세요)
-            location.href = "coupon.html"; 
-        } catch (err) {
-            console.error(err);
-            alert("저장 중 에러가 발생했습니다: " + err.message);
+        if (error) alert("에러: " + error.message);
+        else {
+            // 접속 기록 저장 (나중에 다시 봐도 본인 정보를 찾을 수 있게 ID 저장)
+            localStorage.setItem('savedUserId', data[0].id);
+            location.href = "coupon.html";
         }
     }
 </script>
 </body>
 </html>
-
-
