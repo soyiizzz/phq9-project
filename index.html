@@ -78,15 +78,36 @@
 
     const questions = ["일 또는 여가 활동을 하는 데 흥미나 즐거움을 느끼지 못함", "기분이 가라앉거나, 우울하거나, 희망이 없음", "잠이 들거나 계속 잠을 자는 것이 어려움, 또는 잠을 너무 많이 잠", "피곤하다고 느끼거나 기운이 거의 없음", "입맛이 없거나 너무 많이 먹음", "자신을 부정적으로 보기 - 혹은 자신이 실패자라고 느끼거나 자신 또는 가족을 실망시켰다고 생각함", "신문을 읽거나 TV를 보는 것과 같은 일에 집중하는 것이 어려움", "다른 사람들이 알아챌 정도로 너무 느리게 움직이거나 말을 함", "죽는 것이 더 낫다고 생각하거나 어떤 식으로든 자해를 하려고 생각함"];
 
-    // 정보 입력 확인 후 설문 시작
-    function checkInfo() {
-        if(!document.getElementById('userName').value || !document.getElementById('userPhone').value) return alert("이름과 연락처를 입력해주세요.");
-        if(!document.getElementById('privacyConsent').checked) return alert("개인정보 수집 동의가 필요합니다.");
-        
-        document.getElementById('info-section').style.display = 'none';
-        document.getElementById('survey-section').style.display = 'block';
-        renderQuestions();
+ // 🚀 이 코드를 대신 붙여넣으세요!
+async function checkInfo() {
+    const name = document.getElementById('userName').value;
+    const phone = document.getElementById('userPhone').value;
+    const consent = document.getElementById('privacyConsent').checked;
+
+    if(!name || !phone) return alert("이름과 연락처를 입력해주세요.");
+    if(!consent) return alert("개인정보 수집 동의가 필요합니다.");
+
+    // 🔍 Supabase 장부에 같은 이름과 번호가 있는지 확인
+    const { data, error } = await supabaseClient
+        .from('survey_results')
+        .select('id')
+        .eq('name', name)
+        .eq('phone_number', phone);
+
+    if (data && data.length > 0) {
+        // 이미 기록이 있는 경우 팝업 띄우기
+        if(confirm("이미 검사하신 기록이 있습니다!\n기존 쿠폰함으로 이동하시겠습니까?")) {
+            localStorage.setItem('savedUserId', data[0].id);
+            location.href = "coupon.html";
+            return;
+        }
     }
+
+    // 기록이 없으면 설문 시작
+    document.getElementById('info-section').style.display = 'none';
+    document.getElementById('survey-section').style.display = 'block';
+    renderQuestions();
+}
 
     function renderQuestions() {
         const container = document.getElementById('questions-container');
@@ -131,6 +152,7 @@
 </script>
 </body>
 </html>
+
 
 
 
