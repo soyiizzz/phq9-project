@@ -5,21 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>내 쿠폰함</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f4f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .coupon-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; max-width: 350px; border: 2px dashed #2e7d32; }
-        h1 { color: #2e7d32; font-size: 22px; }
-        .coupon-code { background: #e8f5e9; padding: 15px; border-radius: 10px; font-size: 24px; font-weight: bold; color: #1b5e20; margin: 20px 0; letter-spacing: 2px; }
-        p { color: #666; font-size: 14px; }
-        .home-btn { background: #2e7d32; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-block; margin-top: 20px; font-size: 14px; }
+        body { font-family: sans-serif; background-color: #f0f4f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .coupon-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 350px; border: 2px dashed #2e7d32; }
+        .coupon-code { background: #e8f5e9; padding: 15px; border-radius: 10px; font-size: 24px; font-weight: bold; color: #1b5e20; margin: 20px 0; }
+        .used-style { background: #eee !important; color: #999 !important; text-decoration: line-through; }
+        .btn { background: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .logo-area { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .logo-area img { width: 180px; filter: grayscale(100%); opacity: 0.6; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="coupon-card">
-        <h1>🎁 검사 완료 쿠폰</h1>
-        <p>마음건강 체크에 참여해주셔서 감사합니다!<br>아래 코드를 제시하고 혜택을 받으세요.</p>
-        <div class="coupon-code">MIND-2026-HAPPY</div>
-        <p>* 유효기간: 2026년 12월 31일까지</p>
-        <a href="index.html" class="home-btn">처음으로 돌아가기</a>
+
+<div class="coupon-card">
+    <h3 id="userWelcome">🎁 검사 완료 쿠폰</h3>
+    <div id="couponStatus" class="coupon-code">MIND-2026-HAPPY</div>
+    
+    <p id="infoMsg" style="font-size: 13px; color: #666;">계산 시 직원에게 이 화면을 보여주세요.</p>
+    
+    <button id="useBtn" class="btn" onclick="useCoupon()">직원 확인 (사용하기)</button>
+
+    <div class="logo-area">
+        <img src="https://via.placeholder.com/200x60?text=마포구정신건강복지센터" alt="마포구정신건강복지센터">
     </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://jiqqrhhzqalknfqnagzc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_32sXJul3D-EyGA51HqZK1A_CWjBJ95J';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const userId = localStorage.getItem('savedUserId');
+
+    async function loadStatus() {
+        if(!userId) {
+            alert("검사 기록이 없습니다. 메인으로 이동합니다.");
+            return location.href = "index.html";
+        }
+        
+        // 장부에서 현재 사용자의 상태 가져오기
+        const { data, error } = await supabaseClient
+            .from('survey_results').select('*').eq('id', userId).single();
+        
+        if(data) {
+            document.getElementById('userWelcome').innerText = `${data.name}님의 쿠폰`;
+            if(data.is_used) setAsUsed();
+        }
+    }
+
+    function setAsUsed() {
+        document.getElementById('couponStatus').classList.add('used-style');
+        document.getElementById('couponStatus').innerText = "사용 완료";
+        document.getElementById('useBtn').disabled = true;
+        document.getElementById('useBtn').innerText = "사용 완료되었습니다";
+        document.getElementById('infoMsg').innerText = "이미 사용된 쿠폰입니다.";
+    }
+
+    async function useCoupon() {
+        if(!confirm("직원 확인용입니다. 정말로 사용 처리하시겠습니까?")) return;
+        
+        const { error } = await supabaseClient
+            .from('survey_results').update({ is_used: true }).eq('id', userId);
+        
+        if(!error) {
+            alert("사용 처리되었습니다.");
+            setAsUsed();
+        } else {
+            alert("오류가 발생했습니다: " + error.message);
+        }
+    }
+
+    loadStatus();
+</script>
 </body>
 </html>
