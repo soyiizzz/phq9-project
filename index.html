@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>마음 리필 (Mind Refill) - 청년 마음건강 체크</title>
+    <meta property="og:title" content="마음 리필 (Mind Refill)">
+    <meta property="og:description" content="☕️ 당신의 일상에 따뜻한 여유를 채워드릴게요">
+    <meta property="og:image" content="https://mmhwc.or.kr/img/common/logo.gif">
+    
     <style>
-        /* 신뢰의 블루(#1A3C6C)와 활기의 오렌지(#FF8C42) 조합 */
         :root { 
             --trust-blue: #1A3C6C; 
             --energy-orange: #FF8C42; 
@@ -17,12 +20,12 @@
         h1 { font-size: 28px; color: var(--trust-blue); text-align: center; margin-bottom: 5px; font-weight: 800; }
         .sub-title { text-align: center; color: #666; font-size: 15px; margin-bottom: 30px; }
         
-        /* 상태 표시바 (오렌지색 강조) */
         .progress-container { width: 100%; background: #eee; height: 10px; border-radius: 10px; margin-bottom: 30px; }
         .progress-bar { width: 0%; background: var(--energy-orange); height: 100%; border-radius: 10px; transition: width 0.3s ease; }
 
-        input[type="text"], input[type="tel"] { width: 100%; padding: 15px; margin-top: 10px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 15px; transition: 0.3s; }
-        input:focus { border-color: var(--trust-blue); outline: none; }
+        /* select(드롭다운) 스타일을 input과 똑같이 맞춤 */
+        input[type="text"], input[type="tel"], select { width: 100%; padding: 15px; margin-top: 10px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 15px; transition: 0.3s; font-family: inherit; }
+        input:focus, select:focus { border-color: var(--trust-blue); outline: none; }
 
         .consent-box { background: #f8f9fa; padding: 18px; border-radius: 15px; font-size: 13px; border-left: 5px solid var(--trust-blue); margin: 25px 0; }
         
@@ -52,9 +55,37 @@
     <input type="tel" id="userPhone" placeholder="연락처 (숫자만)">
     <input type="text" id="userSource" placeholder="방문하신 카페 이름">
 
+    <select id="userRegion" onchange="toggleDongSelect()">
+        <option value="">거주 지역을 선택해주세요</option>
+        <option value="서울시 마포구">서울시 마포구</option>
+        <option value="마포구 외 지역">마포구 외 지역</option>
+    </select>
+
+    <div id="dongSelectGroup" style="display: none;">
+        <select id="userDong">
+            <option value="">무슨 동에 거주하시나요?</option>
+            <option value="공덕동">공덕동</option>
+            <option value="아현동">아현동</option>
+            <option value="도화동">도화동</option>
+            <option value="용강동">용강동</option>
+            <option value="대흥동">대흥동</option>
+            <option value="염리동">염리동</option>
+            <option value="신수동">신수동</option>
+            <option value="서강동">서강동</option>
+            <option value="서교동">서교동</option>
+            <option value="합정동">합정동</option>
+            <option value="망원1동">망원1동</option>
+            <option value="망원2동">망원2동</option>
+            <option value="연남동">연남동</option>
+            <option value="성산1동">성산1동</option>
+            <option value="성산2동">성산2동</option>
+            <option value="상암동">상암동</option>
+        </select>
+    </div>
+
     <div class="consent-box">
         <h4 style="margin:0 0 5px 0;">개인정보 수집 동의</h4>
-        • 항목: 이름, 연락처, 검사 결과<br>
+        • 항목: 이름, 연락처, 지역, 검사 결과<br>
         • 목적: 쿠폰 지급 및 결과 안내<br>
         • <span style="color:#d32f2f;">보유기간: 사업 종료 시 지체 없이 파기</span>
         <label style="border:none; padding:0; background:none; margin-top:10px;">
@@ -91,10 +122,28 @@
 
     const questions = ["일 또는 여가 활동을 하는 데 흥미나 즐거움을 느끼지 못함", "기분이 가라앉거나, 우울하거나, 희망이 없음", "잠이 들거나 계속 잠을 자는 것이 어려움, 또는 잠을 너무 많이 잠", "피곤하다고 느끼거나 기운이 거의 없음", "입맛이 없거나 너무 많이 먹음", "자신을 부정적으로 보기 - 혹은 자신이 실패자라고 느끼거나 자신 또는 가족을 실망시켰다고 생각함", "신문을 읽거나 TV를 보는 것과 같은 일에 집중하는 것이 어려움", "다른 사람들이 알아챌 정도로 너무 느리게 움직이거나 말을 함", "죽는 것이 더 낫다고 생각하거나 어떤 식으로든 자해를 하려고 생각함"];
 
+    // 📍 마포구를 선택했을 때만 동 선택칸이 보이게 하는 마법의 함수
+    function toggleDongSelect() {
+        const region = document.getElementById('userRegion').value;
+        const dongGroup = document.getElementById('dongSelectGroup');
+        if (region === '서울시 마포구') {
+            dongGroup.style.display = 'block'; // 보이게 설정
+        } else {
+            dongGroup.style.display = 'none'; // 숨기기
+            document.getElementById('userDong').value = ''; // 다른 지역 누르면 선택된 동 초기화
+        }
+    }
+
     async function checkInfo() {
         const name = document.getElementById('userName').value;
         const phone = document.getElementById('userPhone').value;
-        if(!name || !phone) return alert("정보를 입력해주세요.");
+        const region = document.getElementById('userRegion').value;
+        const dong = document.getElementById('userDong').value;
+
+        // 필수 입력 검사
+        if(!name || !phone) return alert("이름과 연락처를 입력해주세요.");
+        if(!region) return alert("거주 지역을 선택해주세요.");
+        if(region === '서울시 마포구' && !dong) return alert("어느 동에 거주하시는지 선택해주세요.");
         if(!document.getElementById('privacyConsent').checked) return alert("동의서에 체크해주세요.");
 
         const { data } = await supabaseClient.from('survey_results').select('id').eq('name', name).eq('phone_number', phone);
@@ -135,14 +184,18 @@
         for (let [key, value] of formData.entries()) { totalScore += parseInt(value); count++; }
         if(count < 9) return alert("모든 문항을 체크해주세요!");
 
+        // 📍 장부에 저장할 때 지역과 동 데이터도 같이 보내기
         const { data, error } = await supabaseClient.from('survey_results').insert([{ 
             name: document.getElementById('userName').value,
             phone_number: document.getElementById('userPhone').value,
             source: document.getElementById('userSource').value,
+            region: document.getElementById('userRegion').value, // 지역 추가
+            dong: document.getElementById('userDong').value,     // 동 추가
             total_score: totalScore 
         }]).select();
 
         if (!error) { localStorage.setItem('savedUserId', data[0].id); location.href = "coupon.html"; }
+        else { alert("오류가 발생했습니다: " + error.message); }
     }
 </script>
 </body>
