@@ -160,19 +160,22 @@
         if(!consent) return alert("개인정보 수집 동의가 필요합니다.");
 
         // Supabase 장부에서 기존 기록 확인
-        const { data } = await supabaseClient
-            .from('survey_results')
-            .select('id')
-            .eq('name', name)
-            .eq('phone_number', phone);
+   const { data, error } = await supabaseClient
+    .from('survey_results')
+    .select('id')
+    .eq('name', name)
+    .eq('phone_number', phone);
 
-        if (data && data.length > 0) {
-            if(confirm("이미 검사하신 기록이 있습니다!\n기존 쿠폰함으로 이동하시겠습니까?")) {
-                localStorage.setItem('savedUserId', data[0].id);
-                location.href = "coupon.html";
-                return;
-            }
-        }
+if (error) {
+    console.error("Supabase 중복조회 오류:", error);
+
+    alert(
+        "서버 연결 중 오류가 발생했습니다.\n\n" +
+        "오류 내용: " + error.message
+    );
+
+    return;
+}
 
         // 기록 없으면 설문 시작
         document.getElementById('info-section').style.display = 'none';
@@ -237,10 +240,14 @@
             localStorage.setItem('savedUserId', data[0].id);
             location.href = "coupon.html";
         } catch (err) {
-            console.error(err);
-            alert("저장 실패: " + err.message + "\n(Supabase에 region, dong 칸이 있는지 확인해주세요!)");
-        }
-    }
+    console.error("Supabase 저장 오류:", err);
+
+    alert(
+        "검사 결과를 저장하지 못했습니다.\n\n" +
+        "오류 내용: " + (err.message || err) +
+        "\n\n잠시 후 다시 시도해주세요."
+    );
+}
 </script>
 </body>
 </html>
