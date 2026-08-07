@@ -148,33 +148,63 @@
 
     // 4. 정보 입력 확인 및 중복 검사 체크
     async function checkInfo() {
-        const name = document.getElementById('userName').value;
-        const phone = document.getElementById('userPhone').value;
-        const region = document.getElementById('userRegion').value;
-        const dong = document.getElementById('userDong').value;
-        const consent = document.getElementById('privacyConsent').checked;
+    const name = document.getElementById('userName').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+    const region = document.getElementById('userRegion').value;
+    const dong = document.getElementById('userDong').value;
+    const consent = document.getElementById('privacyConsent').checked;
 
-        if(!name || !phone) return alert("이름과 연락처를 입력해주세요.");
-        if(!region) return alert("거주 지역을 선택해주세요.");
-        if(region === '서울시 마포구' && !dong) return alert("거주하시는 '동'을 선택해주세요.");
-        if(!consent) return alert("개인정보 수집 동의가 필요합니다.");
+    if (!name || !phone) {
+        alert("이름과 연락처를 입력해주세요.");
+        return;
+    }
 
-        // Supabase 장부에서 기존 기록 확인
-   const { data, error } = await supabaseClient
-    .from('survey_results')
-    .select('id')
-    .eq('name', name)
-    .eq('phone_number', phone);
+    if (!region) {
+        alert("거주 지역을 선택해주세요.");
+        return;
+    }
 
-if (error) {
-    console.error("Supabase 중복조회 오류:", error);
+    if (region === '서울시 마포구' && !dong) {
+        alert("거주하시는 '동'을 선택해주세요.");
+        return;
+    }
 
-    alert(
-        "서버 연결 중 오류가 발생했습니다.\n\n" +
-        "오류 내용: " + error.message
-    );
+    if (!consent) {
+        alert("개인정보 수집 동의가 필요합니다.");
+        return;
+    }
 
-    return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('survey_results')
+            .select('id')
+            .eq('name', name)
+            .eq('phone_number', phone);
+
+        if (error) {
+            throw error;
+        }
+
+        if (data && data.length > 0) {
+            if (confirm("이미 검사하신 기록이 있습니다!\n기존 쿠폰함으로 이동하시겠습니까?")) {
+                localStorage.setItem('savedUserId', data[0].id);
+                location.href = "coupon.html";
+                return;
+            }
+        }
+
+        document.getElementById('info-section').style.display = 'none';
+        document.getElementById('survey-section').style.display = 'block';
+        renderQuestions();
+
+    } catch (err) {
+        console.error("Supabase 연결 오류:", err);
+
+        alert(
+            "서버 연결에 실패했습니다.\n\n" +
+            "오류: " + (err.message || err)
+        );
+    }
 }
 
         // 기록 없으면 설문 시작
